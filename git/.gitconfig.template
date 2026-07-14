@@ -1,0 +1,26 @@
+# Copy this to ~/.gitconfig and fill in your details.
+# Personal email and any company-internal URL rewrites should live ONLY in
+# your real ~/.gitconfig (or ~/.gitconfig.local), never committed here.
+
+[user]
+	name = YOUR NAME
+	email = you@example.com
+
+[init]
+	defaultBranch = main
+
+[core]
+	excludesfile = ~/.gitignore_global
+	autocrlf = input
+
+[push]
+	autoSetupRemote = true
+
+[difftool "sourcetree"]
+	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
+	path =
+
+# Machine/company-specific overrides (insteadOf URL rewrites, internal hosts,
+# trace2, sslverify, etc.) go in ~/.gitconfig.local
+[include]
+	path = ~/.gitconfig.local
