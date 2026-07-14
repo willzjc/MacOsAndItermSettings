@@ -1,0 +1,43 @@
+#!/usr/bin/env zsh
+# AWS Console Federated Login Function
+# Source this file from ~/.zshrc.local: source ~/.zshrc_aws_console
+
+aws-console() {
+    if [[ -z "$AWS_ACCESS_KEY_ID" ]] || [[ -z "$AWS_SECRET_ACCESS_KEY" ]] || [[ -z "$AWS_SESSION_TOKEN" ]]; then
+        echo "Error: Required AWS environment variables are not set." >&2
+        echo "Please ensure AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN are set." >&2
+        return 1
+    fi
+
+    local account_id="${AWS_ACCOUNT_ID:-}"
+    local session_json="{\"sessionId\":\"$AWS_ACCESS_KEY_ID\",\"sessionKey\":\"$AWS_SECRET_ACCESS_KEY\",\"sessionToken\":\"$AWS_SESSION_TOKEN\"}"
+    local signin_token_response=$(curl -sG --data-urlencode "Session=$session_json" "https://signin.aws.amazon.com/federation?Action=getSigninToken&SessionType=json")
+
+    local signin_token=""
+    if command -v jq >/dev/null 2>&1; then
+        signin_token=$(echo "$signin_token_response" | jq -r '.SigninToken // empty' 2>/dev/null)
+    else
+        signin_token=$(echo "$signin_token_response" | grep -o '"SigninToken":"[^"]*' | sed 's/"SigninToken":"//' | sed 's/"$//')
+    fi
+
+    if [[ -z "$signin_token" ]] || [[ "$signin_token" == "null" ]]; then
+        echo "Error: Failed to get sign-in token from AWS." >&2
+        echo "Response: $signin_token_response" >&2
+        return 1
+    fi
+
+    local destination="https://console.aws.amazon.com/"
+    if [[ -n "$account_id" ]]; then
+        destination="https://${account_id}.signin.aws.amazon.com/console"
+    fi
+
+    local encoded_dest=""
+    if command -v python3 >/dev/null 2>&1; then
+        encoded_dest=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$destination', safe=''))")
+    else
+        encoded_dest=$(echo -n "$destination" | sed 's/%/%25/g; s/:/%3A/g; s/\//%2F/g; s/?/%3F/g; s/&/%26/g; s/=/%3D/g')
+    fi
+
+    local console_url="https://signin.aws.amazon.com/federation?Action=login&Issuer=&Destination=$encoded_dest&SigninToken=$signin_token"
+    echo "$console_url"
+}
