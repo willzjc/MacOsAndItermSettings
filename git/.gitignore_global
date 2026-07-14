@@ -1,0 +1,58 @@
+# IDEs and editors
+.vscode/
+.idea/
+.idea/**
+*.sublime-workspace
+*.sublime-project
+
+# macOS Finder metadata
+.DS_Store
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Virtual environments
+.env/
+.venv/
+env/
+venv/
+ENV/
+VENV/
+.pipenv/
+.poetry/
+
+# Python distribution/build
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Type checker caches
+.mypy_cache/
+.pyright/
+
+# Coverage reports
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.bak
+*.orig
+
+# Secrets (use with caution!)
+.env.local
+.env.*.local
+.env
