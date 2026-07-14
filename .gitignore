@@ -1,0 +1,16 @@
+# Never commit machine-local / private overrides or secrets
+*.local
+.zshrc.local
+.bashrc.local
+.gitconfig.local
+.env
+.env.*
+*.token
+*secret*
+*credentials*
+
+# macOS noise
+.DS_Store
+
+# iTerm scratch
+iterm/*.lock
