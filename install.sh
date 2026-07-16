@@ -170,7 +170,7 @@ for f in "$REPO_DIR/sourceprofile/services/"*.sh; do
 done
 
 if [ ! -f "$SRCPROFILE/atlassian.sh" ]; then
-  warn "~/.sourceprofile/atlassian.sh not found — create it for company-specific config."
+  warn "~/.sourceprofile/atlassian.sh not found — create it for company-specific config (not managed by this repo)."
 else
   success "~/.sourceprofile/atlassian.sh exists (not managed by this repo)"
 fi
