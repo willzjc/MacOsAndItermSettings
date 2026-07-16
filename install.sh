@@ -4,6 +4,16 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SOURCEPROFILE_ONLY=0
+case "${1:-}" in
+  --sourceprofile-only|sourceprofile) SOURCEPROFILE_ONLY=1 ;;
+  -h|--help)
+    echo "Usage: $0 [--sourceprofile-only]"
+    echo "  (default)              bootstrap + link (skips anything already installed)"
+    echo "  --sourceprofile-only   only (re)link ~/.sourceprofile — no brew/omz/etc"
+    exit 0
+    ;;
+esac
 
 # ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -25,6 +35,54 @@ link() {
   ln -s "$src" "$dest"
   success "linked $dest -> $src"
 }
+
+sp_link() {
+  local src="$REPO_DIR/sourceprofile/$1"
+  local dest="$HOME/.sourceprofile/$2"
+  if [ ! -e "$src" ]; then warn "skip (missing): $src"; return; fi
+  if [ -L "$dest" ] && [ "$(readlink "$dest")" = "$src" ]; then
+    success "already linked: $dest"; return
+  fi
+  [ -e "$dest" ] && mv "$dest" "$dest.bak.$(date +%Y%m%d_%H%M%S)" && info "backed up $dest"
+  ln -s "$src" "$dest"
+  success "linked $dest -> $src"
+}
+
+link_sourceprofile() {
+  local SRCPROFILE="$HOME/.sourceprofile"
+  echo
+  echo "=== .sourceprofile ==="
+  mkdir -p "$SRCPROFILE/scripts" "$SRCPROFILE/services"
+
+  sp_link source.sh       source.sh
+  sp_link fzf.sh          fzf.sh
+  sp_link osx.sh          osx.sh
+  sp_link run-services.sh run-services.sh
+  sp_link convertcred.py  convertcred.py
+  sp_link dircolors       dircolors
+
+  for f in "$REPO_DIR/sourceprofile/scripts/"*.sh; do
+    [ -e "$f" ] || continue
+    sp_link "scripts/$(basename "$f")" "scripts/$(basename "$f")"
+  done
+  for f in "$REPO_DIR/sourceprofile/services/"*.sh; do
+    [ -e "$f" ] || continue
+    sp_link "services/$(basename "$f")" "services/$(basename "$f")"
+  done
+
+  if [ ! -f "$SRCPROFILE/atlassian.sh" ]; then
+    warn "~/.sourceprofile/atlassian.sh not found — create it for company-specific config (not managed by this repo)."
+  else
+    success "~/.sourceprofile/atlassian.sh exists (not managed by this repo)"
+  fi
+}
+
+if [ "$SOURCEPROFILE_ONLY" -eq 1 ]; then
+  link_sourceprofile
+  echo
+  echo "=== Done (sourceprofile only) ==="
+  exit 0
+fi
 
 # ─── 0. Prerequisites: git + brew ────────────────────────────────────────────
 
@@ -63,9 +121,13 @@ fi
 echo
 echo "=== Step 1: Homebrew packages ==="
 if [ -f "$REPO_DIR/Brewfile" ]; then
-  info "Running brew bundle (skips already-installed packages)..."
-  brew bundle --file="$REPO_DIR/Brewfile"
-  success "brew bundle complete"
+  if brew bundle check --file="$REPO_DIR/Brewfile" >/dev/null 2>&1; then
+    success "Brewfile already satisfied — skipping brew bundle"
+  else
+    info "Running brew bundle (only installs missing packages)..."
+    brew bundle --file="$REPO_DIR/Brewfile"
+    success "brew bundle complete"
+  fi
 else
   warn "Brewfile not found — skipping"
 fi
@@ -138,42 +200,7 @@ link git/.gitignore_global    .gitignore_global
 
 # ─── 7. sourceprofile ────────────────────────────────────────────────────────
 
-echo
-echo "=== Step 7: .sourceprofile ==="
-SRCPROFILE="$HOME/.sourceprofile"
-mkdir -p "$SRCPROFILE/scripts" "$SRCPROFILE/services"
-
-sp_link() {
-  local src="$REPO_DIR/sourceprofile/$1"
-  local dest="$SRCPROFILE/$2"
-  if [ ! -e "$src" ]; then warn "skip (missing): $src"; return; fi
-  if [ -L "$dest" ] && [ "$(readlink "$dest")" = "$src" ]; then
-    success "already linked: $dest"; return
-  fi
-  [ -e "$dest" ] && mv "$dest" "$dest.bak.$(date +%Y%m%d_%H%M%S)" && info "backed up $dest"
-  ln -s "$src" "$dest"
-  success "linked $dest -> $src"
-}
-
-sp_link source.sh       source.sh
-sp_link fzf.sh          fzf.sh
-sp_link osx.sh          osx.sh
-sp_link run-services.sh run-services.sh
-sp_link convertcred.py  convertcred.py
-sp_link dircolors       dircolors
-
-for f in "$REPO_DIR/sourceprofile/scripts/"*.sh; do
-  sp_link "scripts/$(basename "$f")" "scripts/$(basename "$f")"
-done
-for f in "$REPO_DIR/sourceprofile/services/"*.sh; do
-  sp_link "services/$(basename "$f")" "services/$(basename "$f")"
-done
-
-if [ ! -f "$SRCPROFILE/atlassian.sh" ]; then
-  warn "~/.sourceprofile/atlassian.sh not found — create it for company-specific config (not managed by this repo)."
-else
-  success "~/.sourceprofile/atlassian.sh exists (not managed by this repo)"
-fi
+link_sourceprofile
 
 # ─── 8. iTerm2 preferences ───────────────────────────────────────────────────
 
@@ -217,3 +244,4 @@ echo "  Next steps:"
 echo "    1. Relaunch iTerm2 to load your saved settings"
 echo "    2. Reload your shell:  source ~/.zshrc  (or open a new tab)"
 echo "    3. If ~/.zshrc.local is missing, create it — see README.md"
+echo "  Fast re-link later:  $0 --sourceprofile-only"
