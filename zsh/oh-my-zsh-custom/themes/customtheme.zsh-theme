@@ -18,7 +18,8 @@ function git_info() {
     else
       git_status="${GREEN}✔"
     fi
-    echo "${YELLOW}git:(${branch}) ${git_status}${RESET}"
+    # Trailing space so "✔ |" looks right; omitted when not in a repo (no double space).
+    echo "${YELLOW}git:(${branch}) ${git_status}${RESET} "
   fi
 }
 
