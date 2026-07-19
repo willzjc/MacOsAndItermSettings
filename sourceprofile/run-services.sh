@@ -10,7 +10,7 @@ if [ ! -d "$WZJC_SERVICES_DIR" ]; then
 	return 0
 fi
 
-for f in "$WZJC_SERVICES_DIR"/*; do
+for f in "$WZJC_SERVICES_DIR"/*.sh; do
 	[ -f "$f" ] || continue
 	[ -x "$f" ] || continue
 	name=$(basename "$f")

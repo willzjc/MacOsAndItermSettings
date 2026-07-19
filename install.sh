@@ -60,6 +60,7 @@ link_sourceprofile() {
   sp_link run-services.sh run-services.sh
   sp_link convertcred.py  convertcred.py
   sp_link dircolors       dircolors
+  sp_link "scripts/ticket_log_watcher.py" "scripts/ticket_log_watcher.py"
 
   for f in "$REPO_DIR/sourceprofile/scripts/"*.sh; do
     [ -e "$f" ] || continue
